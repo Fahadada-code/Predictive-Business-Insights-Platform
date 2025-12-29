@@ -118,12 +118,43 @@ function App() {
     };
   });
 
+  const handleDownload = async () => {
+    if (!file) return;
+    
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      setLoading(true);
+      const response = await axios.post(`http://127.0.0.1:8000/report?days=${days}&seasonality_mode=${seasonalityMode}`, formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+        responseType: 'blob', // Important for PDF download
+      });
+      
+      // Create download link
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'forecast_report.pdf');
+      document.body.appendChild(link);
+      link.click();
+      link.parentNode?.removeChild(link);
+      
+      setLoading(false);
+    } catch (err) {
+      console.error(err);
+      setLoading(false);
+      setError("Failed to download report.");
+    }
+  };
+
   return (
     <div className="container">
       <h1>Predictive Business Insights Platform</h1>
 
       <div className="controls">
         <form onSubmit={handleSubmit}>
+          {/* Form inputs... */}
           <div className="form-group">
             <label>Upload CSV Data:</label>
             <input type="file" accept=".csv,.txt" onChange={handleFileChange} />
@@ -148,9 +179,17 @@ function App() {
             </select>
           </div>
 
-          <button type="submit" disabled={loading}>
-            {loading ? 'Analyzing...' : 'Run Forecast & Analysis'}
-          </button>
+          <div className="button-group" style={{ display: 'flex', gap: '10px' }}>
+            <button type="submit" disabled={loading}>
+              {loading ? 'Processing...' : 'Run Forecast & Analysis'}
+            </button>
+            
+            {forecastData.length > 0 && (
+                <button type="button" onClick={handleDownload} disabled={loading} style={{ backgroundColor: '#28a745' }}>
+                  Download PDF Report
+                </button>
+            )}
+          </div>
         </form>
         {error && <p className="error">{error}</p>}
       </div>
