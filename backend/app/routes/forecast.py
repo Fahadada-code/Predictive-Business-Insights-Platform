@@ -131,7 +131,7 @@ async def get_forecast_report(
         pdf_buffer = generate_pdf_report(
             forecast_df=analysis_result["forecast"],
             metrics=analysis_result["metrics"],
-            insights=analysis_result["insights"],
+            insights_data=analysis_result["insights"], # Fixed parameter name
             anomalies=analysis_result["anomalies"]
         )
         

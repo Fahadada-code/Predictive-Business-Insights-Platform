@@ -103,11 +103,33 @@ export function ForecastChart({ data, anomalies }: ForecastChartProps) {
                         <Scatter
                             dataKey="anomalyValue"
                             name="Critical Anomaly"
-                            fill="#ef4444"
+                            line={false}
                             shape={(props: any) => {
                                 const { cx, cy, payload } = props;
-                                const size = payload.severity_level === 'High' ? 10 : payload.severity_level === 'Medium' ? 7 : 4;
-                                return <circle cx={cx} cy={cy} r={size} fill="#ef4444" stroke="#ffffff" strokeWidth={2} />;
+                                const severity = payload.severity_level;
+
+                                // Specific colors and smaller sizes
+                                let fill = "#ef4444"; // High (Red)
+                                let size = 8;
+
+                                if (severity === 'Medium') {
+                                    fill = "#f97316"; // Orange
+                                    size = 5;
+                                } else if (severity === 'Low') {
+                                    fill = "#f59e0b"; // Amber
+                                    size = 3;
+                                }
+
+                                return (
+                                    <circle
+                                        cx={cx}
+                                        cy={cy}
+                                        r={size}
+                                        fill={fill}
+                                        stroke="#ffffff"
+                                        strokeWidth={1.5}
+                                    />
+                                );
                             }}
                         />
 
