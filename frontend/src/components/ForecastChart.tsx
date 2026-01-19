@@ -19,23 +19,31 @@ interface ForecastChartProps {
 }
 
 export function ForecastChart({ data, anomalies }: ForecastChartProps) {
-    // Sort and Merge anomalies into chart data
-    const sortedData = [...data].sort((a, b) => new Date(a.ds).getTime() - new Date(b.ds).getTime());
+    // 1. Sort and Format Data
+    const formattedData = [...data]
+        .map(point => ({
+            ...point,
+            timestamp: new Date(point.ds).getTime()
+        }))
+        .sort((a, b) => a.timestamp - b.timestamp);
 
-    const chartData = sortedData.map(point => {
-        const anomaly = anomalies.find(a => new Date(a.ds).getTime() === new Date(point.ds).getTime());
+    const anomalyMap = new Map(
+        anomalies.map(a => [new Date(a.ds).getTime(), a])
+    );
+
+    const chartData = formattedData.map(point => {
+        const anomaly = anomalyMap.get(point.timestamp);
         return {
             ...point,
-            anomalyValue: anomaly ? anomaly.y : null,
-            severity_level: anomaly ? anomaly.severity_level : null,
+            anomalyValue: anomaly ? (anomaly as any).y : null,
+            severity_level: anomaly ? (anomaly as any).severity_level : null,
         };
     });
 
-    // Prepare dedicated anomaly series to avoid drawing at y=0/null
     const anomalySeries = chartData
         .filter(d => d.anomalyValue !== null)
         .map(d => ({
-            ds: d.ds,
+            timestamp: d.timestamp,
             anomalyValue: d.anomalyValue,
             severity_level: d.severity_level
         }));
@@ -43,9 +51,9 @@ export function ForecastChart({ data, anomalies }: ForecastChartProps) {
     return (
         <div className="glass-panel chart-panel">
             <div className="panel-header">
-                <h2>Forecast & Anomaly Detection</h2>
+                <h2>Forecast & Anomaly Intelligence</h2>
                 <div className="badges">
-                    <span className="badge">Drag to Zoom</span>
+                    <span className="badge">Time-Series Analysis</span>
                 </div>
             </div>
 
@@ -54,42 +62,51 @@ export function ForecastChart({ data, anomalies }: ForecastChartProps) {
                     <ComposedChart data={chartData}>
                         <defs>
                             <linearGradient id="colorForecast" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.4} />
+                                <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.2} />
                                 <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
                             </linearGradient>
                         </defs>
                         <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
                         <XAxis
-                            dataKey="ds"
-                            tickFormatter={(tick) => new Date(tick).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                            dataKey="timestamp"
+                            type="number"
+                            domain={['auto', 'auto']}
+                            tickFormatter={(tick) => new Date(tick).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' })}
                             stroke="#64748b"
-                            minTickGap={30}
+                            minTickGap={50}
                         />
-                        <YAxis stroke="#64748b" tickFormatter={(val) => typeof val === 'number' ? val.toLocaleString(undefined, { maximumFractionDigits: 1 }) : val} />
+                        <YAxis
+                            stroke="#64748b"
+                            tickFormatter={(val) => typeof val === 'number' ? val.toLocaleString() : val}
+                        />
                         <Tooltip
-                            contentStyle={{ backgroundColor: '#ffffff', border: '1px solid #e2e8f0', borderRadius: '8px', color: '#0f172a', boxShadow: '0 4px 6px -1px rgba(0,0,0,0.1)' }}
-                            labelFormatter={(label) => new Date(label).toDateString()}
-                            formatter={(value: any, name: string | any) => {
+                            contentStyle={{
+                                backgroundColor: '#ffffff',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '12px',
+                                padding: '12px',
+                                boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'
+                            }}
+                            labelFormatter={(label) => new Date(label).toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' })}
+                            formatter={(value: any, name: any) => {
                                 if (typeof value !== 'number') return [value, name];
-                                // Improve labels based on dataKey name
-                                const labelMap: Record<string, string> = {
-                                    'yhat': 'Forecast',
-                                    'yhat_upper': 'Upper Bound',
-                                    'yhat_lower': 'Lower Bound',
-                                    'anomalyValue': 'Actual (Anomaly)'
-                                };
-                                return [value.toFixed(2), labelMap[name] || name];
+                                return [value.toLocaleString(undefined, { maximumFractionDigits: 2 }), name];
                             }}
                         />
-                        <Legend verticalAlign="top" height={36} wrapperStyle={{ paddingTop: '10px' }} />
+                        <Legend
+                            verticalAlign="top"
+                            height={40}
+                            iconType="circle"
+                            formatter={(value) => <span style={{ color: '#475569', fontWeight: 500 }}>{value}</span>}
+                        />
 
                         <Area
                             type="monotone"
                             dataKey="yhat_upper"
                             stroke="none"
                             fill="#94a3b8"
-                            fillOpacity={0.2}
-                            name="yhat_upper"
+                            fillOpacity={0.25}
+                            name="Confidence Interval"
                             legendType="none"
                         />
 
@@ -97,27 +114,27 @@ export function ForecastChart({ data, anomalies }: ForecastChartProps) {
                             type="monotone"
                             dataKey="yhat"
                             stroke="#0ea5e9"
-                            name="yhat"
+                            name="Forecasted Trend"
                             dot={false}
                             strokeWidth={3}
-                            activeDot={{ r: 8 }}
+                            activeDot={{ r: 6, fill: '#0ea5e9', stroke: '#fff', strokeWidth: 2 }}
                         />
 
                         <Line
                             type="monotone"
                             dataKey="yhat_upper"
-                            stroke="#475569"
-                            name="yhat_upper"
-                            strokeDasharray="5 5"
+                            stroke="#64748b"
+                            name="Upper Confidence Bound"
+                            strokeDasharray="4 4"
                             dot={false}
                             strokeWidth={1.5}
                         />
                         <Line
                             type="monotone"
                             dataKey="yhat_lower"
-                            stroke="#475569"
-                            name="yhat_lower"
-                            strokeDasharray="5 5"
+                            stroke="#64748b"
+                            name="Lower Confidence Bound"
+                            strokeDasharray="4 4"
                             dot={false}
                             strokeWidth={1.5}
                         />
@@ -125,24 +142,22 @@ export function ForecastChart({ data, anomalies }: ForecastChartProps) {
                         <Scatter
                             data={anomalySeries}
                             dataKey="anomalyValue"
-                            name="anomalyValue"
-                            fill="#ff0000"
-                            legendType="circle"
+                            name="Critical Anomaly"
+                            fill="#ef4444"
                             shape={(props: any) => {
                                 const { cx, cy, payload } = props;
                                 if (typeof cx !== 'number' || typeof cy !== 'number') return <path d="" />;
 
                                 const severity = payload.severity_level;
-
-                                let fill = "#ff0000"; // Critical
-                                let size = 12; // Slightly bigger as requested
+                                let fill = "#ef4444"; // High
+                                let size = 8;
 
                                 if (severity === 'Medium') {
-                                    fill = "#f97316"; // Significant
-                                    size = 8;
-                                } else if (severity === 'Low') {
-                                    fill = "#f59e0b"; // Notable
+                                    fill = "#f97316"; // Medium
                                     size = 6;
+                                } else if (severity === 'Low') {
+                                    fill = "#f59e0b"; // Low
+                                    size = 4;
                                 }
 
                                 return (
@@ -158,7 +173,7 @@ export function ForecastChart({ data, anomalies }: ForecastChartProps) {
                             }}
                         />
 
-                        <Brush dataKey="ds" height={30} stroke="#3b82f6" fill="#f8fafc" />
+                        <Brush dataKey="timestamp" height={30} stroke="#cbd5e1" fill="#f8fafc" tickFormatter={(t) => new Date(t).getFullYear().toString()} />
                     </ComposedChart>
                 </ResponsiveContainer>
             </div>

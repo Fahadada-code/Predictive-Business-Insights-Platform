@@ -201,6 +201,10 @@ def generate_forecast(
     # Generate Insights
     insights = generate_insights(forecast, anomalies, df)
 
+    # Sort by date for alignment
+    forecast = forecast.sort_values('ds')
+    anomalies = anomalies.sort_values('ds')
+
     return {
         "forecast": forecast[['ds', 'yhat', 'yhat_lower', 'yhat_upper']],
         "anomalies": anomalies,
