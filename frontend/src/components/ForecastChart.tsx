@@ -70,10 +70,11 @@ export function ForecastChart({ data, anomalies }: ForecastChartProps) {
                         <XAxis
                             dataKey="timestamp"
                             type="number"
-                            domain={['auto', 'auto']}
-                            tickFormatter={(tick) => new Date(tick).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: '2-digit' })}
+                            domain={['dataMin', 'dataMax']}
+                            tickFormatter={(tick) => new Date(tick).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                             stroke="#64748b"
-                            minTickGap={50}
+                            minTickGap={40}
+                            scale="time"
                         />
                         <YAxis
                             stroke="#64748b"
