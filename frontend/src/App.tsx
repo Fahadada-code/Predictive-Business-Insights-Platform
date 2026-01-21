@@ -147,7 +147,7 @@ function App() {
       >
         <h1>
           <Sparkles style={{ marginRight: '10px', display: 'inline-block' }} />
-          Predictive Business Insights
+          InsightCast
         </h1>
       </motion.div>
 
