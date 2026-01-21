@@ -20,7 +20,7 @@ interface ForecastChartProps {
 }
 
 export function ForecastChart({ data, anomalies }: ForecastChartProps) {
-    // 1. Sort and Format Data
+    // Sort data by date and add timestamps for proper rendering
     const formattedData = [...data]
         .map(point => ({
             ...point,
@@ -28,10 +28,12 @@ export function ForecastChart({ data, anomalies }: ForecastChartProps) {
         }))
         .sort((a, b) => a.timestamp - b.timestamp);
 
+    // Build a quick lookup map for anomalies
     const anomalyMap = new Map(
         anomalies.map(a => [new Date(a.ds).getTime(), a])
     );
 
+    // Merge anomaly data into chart data
     const chartData = formattedData.map(point => {
         const anomaly = anomalyMap.get(point.timestamp);
         return {
@@ -41,13 +43,13 @@ export function ForecastChart({ data, anomalies }: ForecastChartProps) {
         };
     });
 
-    // 2. Track brush range for dynamic updates
+    // Track the current zoom/brush selection
     const [brushRange, setBrushRange] = useState<{ startIndex: number, endIndex: number }>({
         startIndex: 0,
         endIndex: chartData.length - 1
     });
 
-    // 3. Calculate dynamic domain based on brush selection
+    // Update the x-axis to fill the viewport based on selected range
     const visibleData = chartData.slice(brushRange.startIndex, brushRange.endIndex + 1);
     const xDomain = visibleData.length > 0
         ? [visibleData[0].timestamp, visibleData[visibleData.length - 1].timestamp]
@@ -96,7 +98,14 @@ export function ForecastChart({ data, anomalies }: ForecastChartProps) {
                             labelFormatter={(label) => new Date(label).toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' })}
                             formatter={(value: any, name: any) => {
                                 if (typeof value !== 'number') return [value, name];
-                                return [value.toLocaleString(undefined, { maximumFractionDigits: 2 }), name];
+                                // Show friendly names in tooltip
+                                const labelMap: Record<string, string> = {
+                                    yhat: "Forecast",
+                                    yhat_upper: "Upper Bound",
+                                    yhat_lower: "Lower Bound",
+                                    anomalyValue: "Actual (Anomaly)"
+                                };
+                                return [value.toLocaleString(undefined, { maximumFractionDigits: 2 }), labelMap[name] || name];
                             }}
                         />
                         <Legend
@@ -152,6 +161,7 @@ export function ForecastChart({ data, anomalies }: ForecastChartProps) {
                             legendType="circle"
                             shape={(props: any) => {
                                 const { cx, cy, payload } = props;
+                                // Don't render anything if there's no anomaly at this point
                                 if (!cx || !cy || payload.anomalyValue === null) return <path d="" />;
 
                                 const severity = payload.severity_level;
