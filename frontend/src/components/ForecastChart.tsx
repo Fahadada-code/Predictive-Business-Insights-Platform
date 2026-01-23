@@ -69,32 +69,39 @@ export function ForecastChart({ data, anomalies }: ForecastChartProps) {
                     <ComposedChart data={chartData}>
                         <defs>
                             <linearGradient id="colorForecast" x1="0" y1="0" x2="0" y2="1">
-                                <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.2} />
+                                <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.3} />
                                 <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
                             </linearGradient>
                         </defs>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                         <XAxis
                             dataKey="timestamp"
                             type="number"
                             domain={xDomain}
                             tickFormatter={(tick) => new Date(tick).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
-                            stroke="#64748b"
+                            stroke="#94a3b8"
+                            fontSize={12}
+                            tickMargin={10}
                             minTickGap={40}
                             scale="time"
                         />
                         <YAxis
-                            stroke="#64748b"
+                            stroke="#94a3b8"
+                            fontSize={12}
                             tickFormatter={(val) => typeof val === 'number' ? val.toLocaleString() : val}
+                            domain={['auto', 'auto']}
+                            padding={{ top: 20, bottom: 20 }}
                         />
                         <Tooltip
                             contentStyle={{
                                 backgroundColor: '#ffffff',
-                                border: '1px solid #e2e8f0',
+                                border: 'none',
                                 borderRadius: '12px',
-                                padding: '12px',
-                                boxShadow: '0 10px 15px -3px rgba(0,0,0,0.1)'
+                                padding: '16px',
+                                boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)'
                             }}
+                            itemStyle={{ padding: '4px 0' }}
+                            labelStyle={{ marginBottom: '8px', color: '#64748b', fontWeight: 500 }}
                             labelFormatter={(label) => new Date(label).toLocaleDateString(undefined, { weekday: 'short', year: 'numeric', month: 'long', day: 'numeric' })}
                             formatter={(value: any, name: any) => {
                                 if (typeof value !== 'number') return [value, name];
@@ -110,19 +117,31 @@ export function ForecastChart({ data, anomalies }: ForecastChartProps) {
                         />
                         <Legend
                             verticalAlign="top"
-                            height={40}
+                            height={50}
                             iconType="circle"
-                            formatter={(value) => <span style={{ color: '#475569', fontWeight: 500 }}>{value}</span>}
+                            formatter={(value) => <span style={{ color: '#475569', fontWeight: 600, fontSize: '13px', marginLeft: '6px' }}>{value}</span>}
                         />
 
+                        {/* Confidence Interval Area */}
                         <Area
                             type="monotone"
                             dataKey="yhat_upper"
                             stroke="none"
                             fill="#94a3b8"
-                            fillOpacity={0.25}
+                            fillOpacity={0.15}
                             name="Confidence Interval"
                             legendType="none"
+                        />
+
+                        {/* Forecast Gradient Area */}
+                        <Area
+                            type="monotone"
+                            dataKey="yhat"
+                            stroke="none"
+                            fill="url(#colorForecast)"
+                            fillOpacity={1}
+                            legendType="none"
+                            activeDot={false}
                         />
 
                         <Line
@@ -138,11 +157,11 @@ export function ForecastChart({ data, anomalies }: ForecastChartProps) {
                         <Line
                             type="monotone"
                             dataKey="yhat_upper"
-                            stroke="#64748b"
+                            stroke="#cbd5e1"
                             name="Upper Confidence Bound"
                             strokeDasharray="4 4"
                             dot={false}
-                            strokeWidth={1.5}
+                            strokeWidth={1}
                         />
                         <Line
                             type="monotone"
