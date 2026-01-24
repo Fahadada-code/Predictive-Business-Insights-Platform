@@ -266,3 +266,4 @@ def generate_insights(forecast: pd.DataFrame, anomalies: pd.DataFrame, history: 
         "insights": insights,
         "recommendations": recommendations
     }
+#Another test. Just making sure if its working properly or not
